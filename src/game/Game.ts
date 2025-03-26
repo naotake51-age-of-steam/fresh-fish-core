@@ -23,6 +23,7 @@ import { WallTileMapSpace } from "./WallTileMapSpace";
 import { RoadTileMapSpace } from "./RoadTileMapSpace";
 import { OutletTileMapSpace } from "./OutletTileMapSpace";
 import { MarkerMapSpace } from "./MarkerMapSpace";
+import { PlaceWallOrRoadTilePhase } from "./Phase/PlaceWallOrRoadTilePhase";
 import {
   MapSpace,
   CenterTile,
@@ -35,12 +36,6 @@ import {
 export class Game extends State {
   @Exclude()
   private __mapSpaces?: MapSpace[];
-
-  @Exclude()
-  private __wallTiles?: WallTile[];
-
-  @Exclude()
-  private __roadTiles?: RoadTile[];
 
   @Exclude()
   private __outletTiles?: OutletTile[];
@@ -110,6 +105,7 @@ export class Game extends State {
           PhaseId.AUCTION_AND_PLACE_OUTLET_TILE,
           () => AuctionAndPlaceOutletTilePhase
         )
+        .with(PhaseId.PLACE_WALL_OR_ROAD_TILE, () => PlaceWallOrRoadTilePhase)
         .with(PhaseId.END_GAME, () => EndGamePhase)
         .exhaustive(),
       value
@@ -208,48 +204,32 @@ export class Game extends State {
     ));
   }
 
-  private get configByPlayerCount() {
-    return match(this.players.length)
-      .with(5, () => ({
-        mapSpacesSize: 10,
-        wallTilesCount: 20,
-        roadTilesCount: 58,
-        markersCount: 8,
-      }))
-      .with(4, () => ({
-        mapSpacesSize: 9,
-        wallTilesCount: 16,
-        roadTilesCount: 58,
-        markersCount: 8,
-      }))
-      .with(3, () => ({
-        mapSpacesSize: 8,
-        wallTilesCount: 12,
-        roadTilesCount: 58,
-        markersCount: 8,
-      }))
-      .otherwise(() => ({
-        mapSpacesSize: 7,
-        wallTilesCount: 8,
-        roadTilesCount: 58,
-        markersCount: 8,
-      }));
-  }
-
   public get mapSpacesSize(): number {
-    return this.configByPlayerCount.mapSpacesSize;
+    return match(this.players.length)
+      .with(5, () => 10)
+      .with(4, () => 9)
+      .with(3, () => 8)
+      .otherwise(() => 7);
   }
 
   public get wallTilesCount(): number {
-    return this.configByPlayerCount.wallTilesCount;
+    return 24;
+  }
+
+  public get drawableWallTileCount(): number {
+    return match(this.players.length)
+      .with(5, () => 20)
+      .with(4, () => 16)
+      .with(3, () => 12)
+      .otherwise(() => 8);
   }
 
   public get roadTilesCount(): number {
-    return this.configByPlayerCount.roadTilesCount;
+    return 58;
   }
 
   public get markersCount(): number {
-    return this.configByPlayerCount.markersCount;
+    return 8;
   }
 
   get mapSpaces(): MapSpace[] {
@@ -273,15 +253,15 @@ export class Game extends State {
   }
 
   get wallTiles(): WallTile[] {
-    return (this.__wallTiles ??= range(0, this.wallTilesCount - 1).map(
-      (i) => new WallTile(i)
-    ));
+    return __wallTiles;
+  }
+
+  get drawableWallTiles(): WallTile[] {
+    return this.wallTiles.slice(0, this.drawableWallTileCount);
   }
 
   get roadTiles(): RoadTile[] {
-    return (this.__roadTiles ??= range(0, this.roadTilesCount - 1).map(
-      (i) => new RoadTile(i)
-    ));
+    return __roadTiles;
   }
 
   get outletTiles(): OutletTile[] {
@@ -309,6 +289,10 @@ export class Game extends State {
     return this.wallTiles.filter((wallTile) => !wallTile.isPlaced);
   }
 
+  get remainingDrawableWallTiles(): WallTile[] {
+    return this.drawableWallTiles.filter((wallTile) => !wallTile.isPlaced);
+  }
+
   get remainingRoadTiles(): RoadTile[] {
     return this.roadTiles.filter((roadTile) => !roadTile.isPlaced);
   }
@@ -317,8 +301,12 @@ export class Game extends State {
     return this.outletTiles.filter((outletTile) => !outletTile.isPlaced);
   }
 
+  get drawableTiles(): (WallTile | OutletTile)[] {
+    return [...this.drawableWallTiles, ...this.outletTiles];
+  }
+
   get remainingDrawableTiles(): (WallTile | OutletTile)[] {
-    return [...this.remainingWallTiles, ...this.remainingOutletTiles];
+    return [...this.remainingDrawableWallTiles, ...this.remainingOutletTiles];
   }
 
   get hasRemainingDrawableTile(): boolean {
@@ -380,8 +368,6 @@ export class Game extends State {
 
   public flesh(): Game {
     this.__mapSpaces = undefined;
-    this.__wallTiles = undefined;
-    this.__roadTiles = undefined;
     this.__outletTiles = undefined;
     this.__outletTiles = undefined;
     this.__markers = undefined;
@@ -406,3 +392,7 @@ const __centerTiles = [
   new CenterTile(2, CenterType.NUCLEAR_POWER_PLANT),
   new CenterTile(3, CenterType.GAME_SHOP),
 ];
+
+const __wallTiles = range(0, 23).map((i) => new WallTile(i));
+
+const __roadTiles = range(0, 57).map((i) => new RoadTile(i));

@@ -1,7 +1,7 @@
 import { CenterType, PlayerColor } from "enums";
 import { context } from "../game";
 import { State } from "./State";
-import { Marker } from "objects";
+import { Marker, OutletTile } from "objects";
 
 export class Player extends State {
   constructor(
@@ -29,7 +29,18 @@ export class Player extends State {
   }
 
   get useableMarkers(): Marker[] {
-    return this.markers; // TODO
+    const { g } = context();
+
+    const outletTilePlacedCount = g.outletTiles.filter(
+      (outletTile) => outletTile.mapSpace?.marker?.playerId === this.id
+    ).length;
+
+    if (outletTilePlacedCount === 0)
+      return this.markers.slice(0, this.markers.length - 2);
+    if (outletTilePlacedCount === 1)
+      return this.markers.slice(0, this.markers.length - 1);
+
+    return this.markers;
   }
 
   get remainingMarkers(): Marker[] {
@@ -51,6 +62,18 @@ export class Player extends State {
   hasOutletTile(centerType: CenterType): boolean {
     return this.useableMarkers.some(
       (marker) => marker.mapSpace?.outletTile?.type === centerType
+    );
+  }
+
+  getOutletTile(centerType: CenterType): OutletTile | null {
+    const { g } = context();
+
+    return (
+      g.outletTiles.find(
+        (outletTile) =>
+          outletTile.type === centerType &&
+          outletTile.mapSpace?.marker?.playerId === this.id
+      ) ?? null
     );
   }
 }

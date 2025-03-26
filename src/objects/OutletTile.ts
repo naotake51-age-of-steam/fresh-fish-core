@@ -1,6 +1,7 @@
 import { CenterType } from "enums";
 import { match } from "ts-pattern";
 import { context } from "game";
+import { MapSpace } from "objects";
 
 export class OutletTile {
   constructor(public readonly id: number, public readonly type: CenterType) {}
@@ -21,5 +22,10 @@ export class OutletTile {
     const { g } = context();
 
     return g.mapSpaceIndexByOutletTile.has(this.id);
+  }
+
+  get mapSpace(): MapSpace | null {
+    const { g } = context();
+    return g.mapSpaceIndexByOutletTile.get(this.id)?.mapSpace ?? null;
   }
 }
