@@ -11,7 +11,8 @@ export class Player extends State {
     public readonly color: PlayerColor,
     public readonly order: number,
     public readonly markerCount: number,
-    public readonly money: number
+    public readonly money: number,
+    public readonly initialMarkerPlaced: boolean = false
   ) {
     super();
   }

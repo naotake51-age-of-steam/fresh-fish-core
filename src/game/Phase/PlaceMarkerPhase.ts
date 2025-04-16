@@ -31,7 +31,18 @@ export class PlaceMarkerPhase extends Phase {
 
     if (!p?.hasTurn) return false;
 
-    return mapSpace.isEmpty;
+    if (!mapSpace.isEmpty) return false;
+
+    return (
+      !p.initialMarkerPlaced ||
+      mapSpace.relatedMapSpaces.some((relatedMapSpace) => {
+        // マーカーが置かれている未開発区画または道タイルの隣
+        return (
+          relatedMapSpace.roadTile ||
+          (relatedMapSpace.marker && !relatedMapSpace.hasTile)
+        );
+      })
+    );
   }
 
   public actionPlaceMapSpace(mapSpaceId: number): Game {
@@ -52,6 +63,12 @@ export class PlaceMarkerPhase extends Phase {
     }
 
     b.addMarkerMapSpace(new MarkerMapSpace(remainingMarker.id, mapSpace.id));
+
+    b.updatePlayer(
+      p!.produce((draft) => {
+        draft.initialMarkerPlaced = true;
+      })
+    );
 
     return PrepareSelectActionPhase.prepare(b, g.nextPlayer).build();
   }
